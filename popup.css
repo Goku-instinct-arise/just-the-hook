@@ -1,0 +1,170 @@
+/* ─── Design tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:          #18181b;
+  --surface:     #27272a;
+  --border:      #3f3f46;
+  --text:        #fafafa;
+  --text-muted:  #a1a1aa;
+  --accent:      #818cf8; /* indigo-400 */
+  --accent-dark: #6366f1; /* indigo-500 */
+  --radius:      10px;
+  --gap:         10px;
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  width: 272px;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Layout ─────────────────────────────────────────────────────────────────── */
+.container {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.logo        { font-size: 18px; line-height: 1; }
+.header-text { display: flex; flex-direction: column; gap: 1px; }
+h1           { font-size: 15px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.2; }
+.tagline     { font-size: 10px; color: var(--text-muted); letter-spacing: 0.02em; }
+
+/* ─── Card ───────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ─── Generic row ────────────────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.label { font-weight: 500; font-size: 13px; }
+
+/* ─── Toggle switch ──────────────────────────────────────────────────────────── */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 21px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+.thumb {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 21px;
+  transition: background 0.18s ease;
+}
+.thumb::before {
+  content: '';
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  left: 3px;
+  top: 3px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.switch input:checked + .thumb { background: var(--accent-dark); }
+.switch input:checked + .thumb::before {
+  transform: translateX(17px);
+  background: #fff;
+}
+.switch:focus-within .thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ─── Threshold control ──────────────────────────────────────────────────────── */
+.threshold-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#threshold-number {
+  width: 58px;
+  text-align: right;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 3px 7px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+#threshold-number:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+/* Hide browser spin buttons — we have the slider */
+#threshold-number::-webkit-inner-spin-button,
+#threshold-number::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+#threshold-number[type=number] { -moz-appearance: textfield; }
+
+.unit { color: var(--text-muted); font-size: 12px; }
+
+/* ─── Range slider ───────────────────────────────────────────────────────────── */
+#threshold-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 4px;
+  border-radius: 2px;
+}
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-top: -4px;
+}
+
+/* ─── Sites section ──────────────────────────────────────────────────────────── */
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+}
+.site-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  padding: 1px 0;
+  user-select: none;
+}
+.site-row input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.site-name { font-size: 13px; }

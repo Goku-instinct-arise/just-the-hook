@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Just the hook</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+
+    <header class="header">
+      <span class="logo" aria-hidden="true">♪</span>
+      <div class="header-text">
+        <h1>Just the hook</h1>
+        <p class="tagline">Hear the hook. Skip the rest.</p>
+      </div>
+    </header>
+
+    <!-- Master on/off -->
+    <section class="card">
+      <div class="row">
+        <label class="label" for="toggle-enabled">Enabled</label>
+        <label class="switch" title="Turn Just the hook on or off">
+          <input type="checkbox" id="toggle-enabled" />
+          <span class="thumb"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Skip threshold -->
+    <section class="card">
+      <div class="row">
+        <label class="label" for="threshold-number">Skip after</label>
+        <div class="threshold-control">
+          <input
+            type="number"
+            id="threshold-number"
+            min="1"
+            max="3600"
+            step="1"
+            aria-label="Threshold in seconds"
+          />
+          <span class="unit">s</span>
+        </div>
+      </div>
+      <input
+        type="range"
+        id="threshold-slider"
+        min="5"
+        max="300"
+        step="5"
+        aria-label="Threshold slider"
+      />
+      <div class="slider-labels" aria-hidden="true">
+        <span>5s</span>
+        <span>5 min</span>
+      </div>
+    </section>
+
+    <!-- Per-site toggles -->
+    <section class="card">
+      <p class="section-title">Active on</p>
+      <label class="site-row">
+        <input type="checkbox" id="site-youtube" />
+        <span class="site-name">YouTube</span>
+      </label>
+      <label class="site-row">
+        <input type="checkbox" id="site-youtube-music" />
+        <span class="site-name">YouTube Music</span>
+      </label>
+      <label class="site-row">
+        <input type="checkbox" id="site-spotify" />
+        <span class="site-name">Spotify</span>
+      </label>
+    </section>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

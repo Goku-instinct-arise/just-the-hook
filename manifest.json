@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Just the hook",
+  "version": "0.0.1",
+  "description": "Automatically skips to the next track so you only hear the best part. Works on Spotify, YouTube & YouTube Music.",
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://music.youtube.com/*",
+    "*://open.spotify.com/*"
+  ],
+
+  "icons": {
+    "16":  "icons/just_the_hook_16x16.png",
+    "48":  "icons/just_the_hook_48x48.png",
+    "128": "icons/just_the_hook_128x128.png"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Just the hook",
+    "default_icon": {
+      "16":  "icons/just_the_hook_16x16.png",
+      "48":  "icons/just_the_hook_48x48.png",
+      "128": "icons/just_the_hook_128x128.png"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://music.youtube.com/*",
+        "*://open.spotify.com/*"
+      ],
+      "js": [
+        "adapters/youtube.js",
+        "adapters/youtubeMusic.js",
+        "adapters/spotify.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
