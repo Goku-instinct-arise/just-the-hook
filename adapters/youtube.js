@@ -4,8 +4,11 @@
 // These may drift when YouTube updates its player UI.
 // When a selector breaks, search for the element in DevTools and update here.
 const YT_SELECTORS = {
-  video:      'video',            // The main HTML5 video element in the player
-  nextButton: '.ytp-next-button', // "Next" button in the player toolbar
+  video:      'video',             // The main HTML5 video element in the player
+  nextButton: '.ytp-next-button',  // "Next" button in the player toolbar
+
+  // FRAGILE: update if YouTube redesigns the right side of the player toolbar.
+  buttonContainer: '.ytp-right-controls',
 };
 
 // ─── Adapter factory ──────────────────────────────────────────────────────────
@@ -55,5 +58,17 @@ function createYouTubeAdapter() {
         })
       );
     },
+
+    // ─── In-player button ─────────────────────────────────────────────────────
+
+    getButtonContainer() {
+      return document.querySelector(YT_SELECTORS.buttonContainer);
+    },
+
+    // Matches YouTube's own toolbar button class for consistent sizing/spacing.
+    buttonClass: 'ytp-button',
+
+    // CSS class applied to #jth-tab-toggle for platform-specific sizing.
+    platformClass: 'jth-yt',
   };
 }

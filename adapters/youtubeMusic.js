@@ -4,10 +4,13 @@
 // YouTube Music uses Polymer/Web Components; class names are more stable than
 // on regular YouTube but can still drift. Update here if buttons stop working.
 const YTM_SELECTORS = {
-  video:          'video',                               // Audio stream in a <video> element
-  nextButton:     'tp-yt-paper-icon-button.next-button', // Polymer icon button for next track
-  nextButtonAlt:  '.next-button',                        // Fallback: plain class match
-  trackTitle:     '.title.ytmusic-player-bar',           // Song title in the player bar
+  video:         'video',                                // Audio stream in a <video> element
+  nextButton:    'tp-yt-paper-icon-button.next-button',  // Polymer icon button for next track
+  nextButtonAlt: '.next-button',                         // Fallback: plain class match
+  trackTitle:    '.title.ytmusic-player-bar',            // Song title in the player bar
+
+  // FRAGILE: update if YouTube Music redesigns the player bar's right controls.
+  buttonContainer: 'ytmusic-player-bar #right-controls',
 };
 
 // ─── Adapter factory ──────────────────────────────────────────────────────────
@@ -59,5 +62,14 @@ function createYouTubeMusicAdapter() {
         })
       );
     },
+
+    // ─── In-player button ─────────────────────────────────────────────────────
+
+    getButtonContainer() {
+      return document.querySelector(YTM_SELECTORS.buttonContainer);
+    },
+
+    // CSS class applied to #jth-tab-toggle for platform-specific sizing.
+    platformClass: 'jth-ytm',
   };
 }

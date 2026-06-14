@@ -15,6 +15,18 @@ const SPOTIFY_SELECTORS = {
   skipForwardButton: '[data-testid="control-button-skip-forward"]',
   // Track title in the now-playing bar (bottom-left)
   trackTitle:        '[data-testid="now-playing-widget"] [data-testid="context-item-info-title"]',
+
+  // FRAGILE: update if Spotify renames these buttons.
+  // We locate the right-controls container by finding a known first child and
+  // walking up to its parent — more reliable than targeting the container itself,
+  // whose own data-testid varies across Spotify versions.
+  rightControlsAnchor:  '[data-testid="lyrics-button"]',
+  rightControlsAnchor2: '[data-testid="queue-button"]',
+  rightControlsAnchor3: '[data-testid="devices-button"]',
+  // Direct container selectors as last-resort fallbacks.
+  buttonContainer:          '[data-testid="right-side-of-now-playing-bar"]',
+  buttonContainerFallback1: '[data-testid="volume-bar"]',
+  buttonContainerFallback2: '[data-testid="now-playing-bar"]',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,5 +87,28 @@ function createSpotifyAdapter() {
       // No keyboard fallback: Spotify intercepts key events inconsistently
       // and can mis-route them to the search box.
     },
+
+    // ─── In-player button ─────────────────────────────────────────────────────
+
+    getButtonContainer() {
+      // Strategy: walk up from any confirmed child of the right-controls bar.
+      // We try named anchor buttons first (their data-testid varies by Spotify
+      // version), then fall back to volume-bar which is reliably present.
+      const child =
+        document.querySelector(SPOTIFY_SELECTORS.rightControlsAnchor) ||
+        document.querySelector(SPOTIFY_SELECTORS.rightControlsAnchor2) ||
+        document.querySelector(SPOTIFY_SELECTORS.rightControlsAnchor3) ||
+        document.querySelector(SPOTIFY_SELECTORS.buttonContainerFallback1);
+      if (child && child.parentElement) return child.parentElement;
+
+      // Last resort: direct container selectors.
+      return (
+        document.querySelector(SPOTIFY_SELECTORS.buttonContainer) ||
+        document.querySelector(SPOTIFY_SELECTORS.buttonContainerFallback2)
+      );
+    },
+
+    // CSS class applied to #jth-tab-toggle for platform-specific sizing.
+    platformClass: 'jth-spotify',
   };
 }

@@ -4,9 +4,9 @@ const DEFAULT_SETTINGS = {
   enabled: true,
   thresholdSeconds: 60,
   sites: {
-    youtube: true,
+    youtube:      false, // YouTube has lots of non-music content; users opt in
     youtubeMusic: true,
-    spotify: true,
+    spotify:      true,
   },
 };
 

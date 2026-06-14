@@ -25,7 +25,7 @@ To reload after editing source files, click the refresh icon on the
 ```
 just-the-hook/
 ├── manifest.json          — MV3 manifest
-├── content.js             — Polling loop + settings wiring (injected into each tab)
+├── content.js             — Polling loop + settings wiring + in-player button (injected into each tab)
 ├── adapters/
 │   ├── youtube.js         — YouTube adapter  (createYouTubeAdapter)
 │   ├── youtubeMusic.js    — YouTube Music adapter  (createYouTubeMusicAdapter)
@@ -40,37 +40,43 @@ factory function in the shared content-script scope.
 
 ### Adapter interface
 
-Each adapter implements four methods:
+Each adapter implements four skip-logic methods plus two in-player button members:
 
-| Method | Returns | Purpose |
+| Member | Type | Purpose |
 |---|---|---|
-| `getPositionSeconds()` | `number \| null` | Current playback position in the track |
-| `getTrackId()` | `string \| null` | Stable-ish ID to detect a track change |
-| `isPlaying()` | `boolean` | Whether audio is actively playing |
-| `skipToNext()` | `void` | Advance to the next track |
+| `getPositionSeconds()` | `() → number\|null` | Current playback position in the track |
+| `getTrackId()` | `() → string\|null` | Stable-ish ID to detect a track change |
+| `isPlaying()` | `() → boolean` | Whether audio is actively playing |
+| `skipToNext()` | `() → void` | Advance to the next track |
+| `getButtonContainer()` | `() → Element\|null` | Container element for the in-player toggle button |
+| `platformClass` | `string` | CSS class added to the button for platform-specific sizing |
+
+`buttonClass` is optional: when set, it is also added to the button so it
+inherits the platform's own button styling (e.g. `ytp-button` on YouTube).
 
 ### Core loop (`content.js`)
 
 A `setInterval` runs every 500 ms per active tab and:
 
-1. Reads current settings from `chrome.storage.sync`
-2. Resolves the correct adapter for the page's hostname
-3. Calls `isPlaying()` — if `false`, does nothing
-4. Calls `getPositionSeconds()` — if `< thresholdSeconds`, does nothing
+1. Re-injects the in-player toggle button if the player re-rendered it away.
+2. Evaluates `effectiveActive` (see **State model** below) — if `false`, no-ops.
+3. Calls `isPlaying()` — if `false`, does nothing.
+4. Calls `getPositionSeconds()` — if `< thresholdSeconds`, does nothing.
 5. Calls `getTrackId()` — if it matches `lastSkippedTrackId`, does nothing
-   (prevents re-triggering before the next song has loaded)
-6. Records the track ID and calls `skipToNext()`
+   (prevents re-triggering before the next song has loaded).
+6. Records the track ID and calls `skipToNext()`.
 
 Settings changes in the popup are propagated immediately via
 `chrome.storage.onChanged` — no page reload needed.
 
 ### YouTube / YouTube Music specifics
 
-- Audio comes from an `<video>` element; `currentTime`, `paused`, and
+- Audio comes from a `<video>` element; `currentTime`, `paused`, and
   `readyState` are read directly from the media element.
 - Both sites are single-page apps. YouTube fires a `yt-navigate-finish` window
   event after each navigation; `content.js` listens for it and re-resolves the
-  adapter so the video element reference stays fresh.
+  adapter so the video element reference stays fresh, then re-injects the
+  in-player button.
 - Track identity: the `?v=` URL parameter (most stable). Falls back to video
   `src` or page title.
 
@@ -87,6 +93,94 @@ Settings changes in the popup are propagated immediately via
 
 ---
 
+## Settings
+
+### Per-platform defaults
+
+Different sites ship with different default states to match their content type:
+
+| Site | Default | Reason |
+|---|---|---|
+| Spotify | **On** | Primarily music; skip-to-hook is always useful |
+| YouTube Music | **On** | Exclusively music; same rationale as Spotify |
+| YouTube | **Off** | Heavy mix of non-music content (talks, vlogs, tutorials); users opt in |
+
+These defaults apply on first install and can be changed any time in the popup.
+
+### Settings reference
+
+| Setting | Default | Description |
+|---|---|---|
+| Enabled | On | Master on/off toggle |
+| Skip after | 60 s | Skip when playback position ≥ this threshold |
+| YouTube | **Off** | Enable on youtube.com |
+| YouTube Music | On | Enable on music.youtube.com |
+| Spotify | On | Enable on open.spotify.com |
+
+Settings are stored in `chrome.storage.sync` and sync across Chrome profiles.
+
+---
+
+## In-player toggle button
+
+Each supported player gets a small **Just the Hook** button injected directly
+into its control bar. It lets you flip auto-skip for the **current tab only**,
+independent of the popup's global settings.
+
+### Visual states
+
+| State | Appearance |
+|---|---|
+| **Active** | Full-color icon at full opacity |
+| **Inactive** | Dimmed icon (≈38 % opacity) with a diagonal slash through it |
+
+Hovering shows a tooltip; the `aria-label` also reflects state for screen
+readers (`"Just the Hook: on for this tab"` / `"Just the Hook: off for this tab"`).
+
+### State model and override precedence
+
+```
+effectiveActive =
+    perTabOverride !== null
+        ? perTabOverride                       // in-player button wins
+        : (masterEnabled && siteEnabled)       // falls back to popup settings
+```
+
+- **`perTabOverride`** is `null` on content-script load and is set by clicking
+  the in-player button. It is **never** reset by navigation or player re-renders
+  within the same tab.
+- **Only a full page reload** (which re-runs the content script) clears the
+  per-tab override back to `null`.
+- The popup remains the global default control. The in-player button is a
+  lightweight per-tab override on top of it.
+
+### Example flows
+
+| Scenario | Effective state |
+|---|---|
+| YouTube (default off), no override | Skip disabled |
+| YouTube, user clicks in-player button once | Skip enabled for this tab |
+| Spotify (default on), user clicks in-player button once | Skip disabled for this tab |
+| User navigates to next video (soft-nav), no reload | Override persists |
+| User reloads the page | Override cleared; falls back to popup setting |
+
+### Injection points
+
+Each adapter's `_SELECTORS` object holds the container selector. Update it
+there when a site redesigns its player (see **Known-fragile selectors** below).
+
+| Platform | Container selector |
+|---|---|
+| YouTube | `.ytp-right-controls` |
+| YouTube Music | `ytmusic-player-bar #right-controls` |
+| Spotify | `[data-testid="right-side-of-now-playing-bar"]` (falls back: `volume-bar` → `now-playing-bar`) |
+
+The button re-injects automatically whenever the polling loop detects it has
+been removed by a player re-render (track change, SPA navigation, fullscreen
+transition). `perTabOverride` is preserved across all of these.
+
+---
+
 ## Known-fragile selectors and where to fix them
 
 When a site updates its UI and the extension stops working, open
@@ -97,26 +191,12 @@ to find the replacement.
 
 | File | Object | Selectors most likely to break |
 |---|---|---|
-| `adapters/youtube.js` | `YT_SELECTORS` | `.ytp-next-button` |
-| `adapters/youtubeMusic.js` | `YTM_SELECTORS` | `tp-yt-paper-icon-button.next-button`, `.title.ytmusic-player-bar` |
+| `adapters/youtube.js` | `YT_SELECTORS` | `.ytp-next-button`, `.ytp-right-controls` |
+| `adapters/youtubeMusic.js` | `YTM_SELECTORS` | `tp-yt-paper-icon-button.next-button`, `.title.ytmusic-player-bar`, `ytmusic-player-bar #right-controls` |
 | `adapters/spotify.js` | `SPOTIFY_SELECTORS` | All `data-testid` attributes |
 
 Tip: in DevTools console on the target page, run
 `document.querySelector('<selector>')` to verify a selector is still live.
-
----
-
-## Settings
-
-| Setting | Default | Description |
-|---|---|---|
-| Enabled | On | Master on/off toggle |
-| Skip after | 60 s | Skip when playback position ≥ this threshold |
-| YouTube | On | Enable on youtube.com |
-| YouTube Music | On | Enable on music.youtube.com |
-| Spotify | On | Enable on open.spotify.com |
-
-Settings are stored in `chrome.storage.sync` and sync across Chrome profiles.
 
 ---
 
@@ -147,9 +227,10 @@ Settings are stored in `chrome.storage.sync` and sync across Chrome profiles.
 1. Create `adapters/newsite.js` implementing `createNewSiteAdapter()`.
 2. Add the hostname check to `resolveAdapter()` and `isSiteEnabled()` in
    `content.js`.
-3. Add a checkbox to `popup.html` / `popup.js`.
+3. Add a checkbox to `popup.html` / `popup.js` with an appropriate default.
 4. Add the match pattern and new file to `content_scripts` in `manifest.json`.
 5. Add the host to `host_permissions` in `manifest.json`.
+6. Implement `getButtonContainer()` and set `platformClass` in the adapter.
 
 ### Hooking in a remote timestamp source (future)
 
@@ -169,4 +250,4 @@ function createRemoteWrappedAdapter(inner) {
 ```
 
 `resolveAdapter()` in `content.js` would then wrap the base adapter. No
-network calls exist in this v0; everything runs locally.
+network calls exist in the current version; everything runs locally.
